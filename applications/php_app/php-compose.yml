@@ -1,0 +1,35 @@
+services:
+  PROJECT_NAME:
+    container_name: PROJECT_NAME
+    image: php:8.1-apache
+    restart: unless-stopped
+    environment:
+      PHP_DISPLAY_ERRORS: ${PHP_DISPLAY_ERRORS:-0}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-256M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-30}
+      PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-10M}
+      # Database connection (if needed)
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    volumes:
+      - ../html:/var/www/html
+      - ../docker/php.ini:/usr/local/etc/php/conf.d/custom.ini    command: >
+      bash -c "
+      apt-get update && 
+      apt-get install -y libpq-dev libpng-dev libjpeg-dev libfreetype6-dev libzip-dev default-mysql-client && 
+      docker-php-ext-configure gd --with-freetype --with-jpeg && 
+      docker-php-ext-install -j\$$(nproc) gd pdo pdo_mysql pdo_pgsql mysqli zip opcache && 
+      a2enmod rewrite && 
+      a2enmod headers && 
+      a2enmod expires && 
+      chown -R www-data:www-data /var/www/html && 
+      apache2-foreground
+      "
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true

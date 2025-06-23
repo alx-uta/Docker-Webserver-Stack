@@ -1,0 +1,25 @@
+services:
+  npm:
+    container_name: nginx-proxy-manager
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      INITIAL_ADMIN_EMAIL: ${NGINX_PROXY_MANAGER_ADMIN_EMAIL}
+      INITIAL_ADMIN_PASSWORD: ${NGINX_PROXY_MANAGER_ADMIN_PASSWORD}
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true
+
+volumes:
+  npm_data:
+  npm_letsencrypt:

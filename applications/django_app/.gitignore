@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Django
+media/
+staticfiles/
+static/
+local_settings.py
+
+# Docker
+docker/.env
+docker-compose.override.yml
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node/npm
+node_modules/
+npm-debug.log
+
+
+# Test/coverage
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.cache/

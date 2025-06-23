@@ -1,0 +1,68 @@
+# Ignore Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.env/
+env/
+venv/
+ENV/
+VENV/
+.venv/
+*.egg-info/
+*.egg
+
+# Ignore Django/WordPress generated files
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+static/
+node_modules/
+npm-debug.log
+
+# Ignore Docker build artifacts
+*.log
+docker-compose.override.yml
+
+# Ignore environment files (keep only .env as an example)
+.env
+.env.*
+!.env
+!.env.example
+webserver/.env
+
+# Ignore data and backup directories
+data/
+!data/.gitkeep
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore editor/project files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore backup files
+*~
+*.bak
+
+# Ignore secret or production env files
+.env.prod
+.env.production
+.env.live
+.env.local
+.env.secret
+
+# Ignore setup script output (if any)
+setup.log
+
+# Ignore build artifacts
+dist/
+build/

@@ -1,0 +1,13 @@
+services:
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"  # Web UI: http://localhost:8081
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true

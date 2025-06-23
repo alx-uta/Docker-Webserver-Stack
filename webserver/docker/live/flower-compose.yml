@@ -1,0 +1,20 @@
+services:
+  flower:
+    image: mher/flower
+    container_name: flower
+    restart: unless-stopped
+    command: >
+      sh -c "celery flower --basic-auth=${FLOWER_USER}:${FLOWER_PASSWORD}"
+    working_dir: /data
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      FLOWER_USER: ${FLOWER_USER}
+      FLOWER_PASSWORD: ${FLOWER_PASSWORD}
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true

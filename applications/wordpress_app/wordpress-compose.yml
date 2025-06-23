@@ -1,0 +1,22 @@
+services:
+  PROJECT_NAME:
+    container_name: PROJECT_NAME
+    image: wordpress:php8.1-apache
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DOMAIN: ${WORDPRESS_DOMAIN}
+    volumes:
+      - ../html:/var/www/html
+    command: >
+      bash -c "chown -R www-data:www-data /var/www/html &&
+               docker-entrypoint.sh apache2-foreground"
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true

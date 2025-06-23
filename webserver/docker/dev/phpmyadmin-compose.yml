@@ -1,0 +1,22 @@
+services:
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "28888:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+      PHP_UPLOAD_MAX_FILESIZE: 64M
+      PHP_POST_MAX_SIZE: 64M
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true
+  database-internal:
+    driver: bridge
+    internal: true

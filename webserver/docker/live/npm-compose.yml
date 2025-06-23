@@ -1,0 +1,36 @@
+services:
+  npm-builder:
+    image: node:20-alpine
+    container_name: npm-builder
+    restart: unless-stopped
+    working_dir: /websites
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ../../../../websites:/websites
+    networks:
+      - webserver-network
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      # Install additional tools
+      apk update && apk add --no-cache git bash curl
+
+      # Install global npm packages that are commonly used
+      npm install -g @vue/cli @angular/cli create-react-app vite
+
+      echo 'NPM Builder configured successfully!'
+      echo 'Node.js version:' \$(node --version)
+      echo 'NPM version:' \$(npm --version)
+      echo 'Available websites:'
+      ls -la /websites/
+
+      echo 'Container ready for npm operations'
+      
+      # Keep container running
+      tail -f /dev/null
+      "
+
+networks:
+  webserver-network:
+    external: true

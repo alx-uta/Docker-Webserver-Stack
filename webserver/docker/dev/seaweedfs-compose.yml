@@ -1,0 +1,65 @@
+services:
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    container_name: seaweedfs-master
+    command: "master -ip=seaweedfs-master -mdir=/data"
+    # No external ports - only internal communication
+    volumes:
+      - ./data/seaweedfs/master:/data
+    networks:
+      - webserver-network
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    container_name: seaweedfs-volume
+    command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -dir=/data"
+    # No external ports - only internal communication
+    depends_on:
+      - seaweedfs-master
+    volumes:
+      - ./data/seaweedfs/volume:/data
+    networks:
+      - webserver-network
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    container_name: seaweedfs-filer
+    command:
+      - "apk add --no-cache postgresql-client && sh /scripts/check_create_filemeta.sh && weed filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -port=8888 -defaultReplicaPlacement=000 -disableDirListing=true -exposeDirectoryData=false"
+
+    # No external ports - only internal communication
+    depends_on:
+      - seaweedfs-master
+    environment:
+      - SEAWEED_POSTGRES_HOST=${SEAWEED_POSTGRES_HOST}
+      - SEAWEED_POSTGRES_PORT=${SEAWEED_POSTGRES_PORT}
+      - SEAWEED_POSTGRES_USER=${SEAWEED_POSTGRES_USER}
+      - SEAWEED_POSTGRES_PASSWORD=${SEAWEED_POSTGRES_PASSWORD}
+      - SEAWEED_POSTGRES_DB=${SEAWEED_POSTGRES_DB}
+    networks:
+      - webserver-network
+    volumes:
+      - ./data/seaweedfs/filer:/data
+      - ../../../config/seaweedfs/check_create_filemeta.sh:/scripts/check_create_filemeta.sh
+    entrypoint: ["/bin/sh", "-c"]
+  seaweedfs-s3:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    container_name: seaweedfs-s3
+    command: "server -s3 -s3.port=8333"
+    environment:
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    depends_on:
+      - seaweedfs-master
+      - seaweedfs-filer
+    networks:
+      - webserver-network
+    volumes:
+      - ./data/seaweedfs/s3:/data
+
+networks:
+  webserver-network:
+    external: true

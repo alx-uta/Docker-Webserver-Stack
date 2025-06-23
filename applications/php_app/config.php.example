@@ -1,0 +1,50 @@
+<?php
+/**
+ * Configuration file for PROJECT_NAME
+ * Domain: WEBSITE_DOMAIN
+ */
+
+// Environment settings
+$config = [
+    'app' => [
+        'name' => 'PROJECT_NAME',
+        'domain' => 'WEBSITE_DOMAIN',
+        'debug' => $_ENV['PHP_DISPLAY_ERRORS'] ?? false,
+        'timezone' => 'UTC',
+    ],
+    
+    'database' => [
+        'host' => $_ENV['DB_HOST'] ?? 'localhost',
+        'username' => $_ENV['DB_USER'] ?? '',
+        'password' => $_ENV['DB_PASSWORD'] ?? '',
+        'database' => $_ENV['DB_NAME'] ?? '',
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+    ],
+    
+    'paths' => [
+        'root' => __DIR__ . '/..',
+        'public' => __DIR__ . '/../public',
+        'uploads' => __DIR__ . '/../uploads',
+        'cache' => __DIR__ . '/../cache',
+        'logs' => __DIR__ . '/../logs',
+    ],
+    
+    'security' => [
+        'encryption_key' => $_ENV['APP_KEY'] ?? '',
+        'hash_algorithm' => 'sha256',
+        'session_lifetime' => 120, // minutes
+    ],
+    
+    'mail' => [
+        'host' => $_ENV['SMTP_HOST'] ?? '',
+        'port' => $_ENV['SMTP_PORT'] ?? 587,
+        'username' => $_ENV['SMTP_USER'] ?? '',
+        'password' => $_ENV['SMTP_PASSWORD'] ?? '',
+        'encryption' => $_ENV['SMTP_ENCRYPTION'] ?? 'tls',
+        'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'noreply@WEBSITE_DOMAIN',
+        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'PROJECT_NAME',
+    ],
+];
+
+return $config;
