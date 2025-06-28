@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    // Python development
+    "ms-python.python",
+    "ms-python.flake8",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    
+    // Django support
+    
+    // Frontend development
+    "esbenp.prettier-vscode",
+    
+    // General development tools
+    "redhat.vscode-yaml",
+    
+    // Git and version control
+    "eamodio.gitlens",
+    
+    // Productivity
+    
+    // Database
+  ]
+}

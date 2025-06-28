@@ -3,6 +3,11 @@ set -e
 
 # Bash script to scaffold a new PHP app with Docker support in /websites
 
+# Get the script directory and ensure we're in the right place
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APPLICATIONS_DIR="$(dirname "$SCRIPT_DIR")"
+BASE_DIR="$APPLICATIONS_DIR"
+
 # 1. Ask for domain and PHP project name
 read -p "Enter the domain name (e.g., site1_com): " DOMAIN
 read -p "Enter the PHP project name (e.g., myapp): " PROJECT
@@ -20,7 +25,6 @@ if ! echo "$PROJECT" | grep -q '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$'; then
 fi
 
 # 2. Set up paths
-BASE_DIR="$(pwd)"
 WEBSITES_DIR="$(dirname "$(dirname "$BASE_DIR")")/websites"
 SITE_DIR="$WEBSITES_DIR/$DOMAIN"
 APP_DIR="$SITE_DIR/html"
@@ -199,7 +203,14 @@ Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 EOF
 
-# 6. Copy Docker Compose, .env.example, php.ini, composer.json, config, README, and .gitignore
+# 6. Check if template files exist
+if [ ! -f "$BASE_DIR/php_app/php-compose.yml" ]; then
+    echo "Error: PHP template files not found in $BASE_DIR/php_app/"
+    echo "Please ensure the php_app directory exists with the required template files."
+    exit 1
+fi
+
+# 7. Copy Docker Compose, .env.example, php.ini, composer.json, config, README, and .gitignore
 cp "$BASE_DIR/php_app/php-compose.yml" "$DOCKER_DIR/php-compose.yml"
 cp "$BASE_DIR/php_app/.env.example" "$DOCKER_DIR/.env"
 cp "$BASE_DIR/php_app/php.ini.example" "$DOCKER_DIR/php.ini"
@@ -208,7 +219,7 @@ cp "$BASE_DIR/php_app/config.php.example" "$APP_DIR/config/config.php"
 cp "$BASE_DIR/php_app/README.md.example" "$SITE_DIR/README.md"
 cp "$BASE_DIR/php_app/.gitignore" "$SITE_DIR/.gitignore"
 
-# 7. Replace placeholders in copied files
+# 8. Replace placeholders in copied files
 sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/php-compose.yml"
 sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/.env"
 sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/.env"
@@ -228,7 +239,7 @@ sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$SITE_DIR/README.md"
 sed -i "s/PROJECT_NAME/$PROJECT/g" "$APP_DIR/config/config.php"
 sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$APP_DIR/config/config.php"
 
-# 8. Update container name in php-compose.yml (container name is already set correctly by template replacement)
+# 9. Update container name in php-compose.yml (container name is already set correctly by template replacement)
 
 echo "PHP app setup complete!"
 echo "========================================"
@@ -241,11 +252,8 @@ echo "✓ README.md created: $SITE_DIR/README.md"
 echo ""
 echo "Next steps:"
 echo "1. Update database credentials in $DOCKER_DIR/.env"
-echo "2. Start the application:"
-echo "   cd $DOCKER_DIR"
-echo "   docker-compose -p $PROJECT -f php-compose.yml up -d"
-echo "3. Or use the application manager:"
-echo "   cd ../applications && ./app_manage.sh"
+echo "2. Use the application manager to start your PHP application:"
+echo "   cd $APPLICATIONS_DIR && ./app_manage.sh"
 echo ""
 echo "Your PHP application will be available at http://localhost"
 echo "(Configure your reverse proxy to point to the container)"

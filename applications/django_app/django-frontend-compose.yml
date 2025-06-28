@@ -1,0 +1,19 @@
+services:
+  frontend:
+    container_name: PROJECT_NAME-frontend
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app/frontend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../app/frontend:/app/frontend
+    environment:
+      - NODE_ENV=development
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true
