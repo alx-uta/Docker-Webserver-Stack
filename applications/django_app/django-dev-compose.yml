@@ -1,0 +1,37 @@
+services:
+  PROJECT_NAME:
+    container_name: PROJECT_NAME
+    image: django-PROJECT_NAME:latest
+    restart: unless-stopped
+    command: tail -f /dev/null
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      # Add other environment variables as needed
+    volumes:
+      - ../app:/app
+      - ../app/static:/app/static
+      - ../app/media:/app/media
+      - ../docker/.env:/app/.env
+    networks:
+      - webserver-network
+    build:
+      context: ../app/
+      dockerfile: ../docker/Dockerfile
+
+  celery:
+    container_name: PROJECT_NAME-celery
+    image: django-PROJECT_NAME:latest
+    restart: unless-stopped
+    command: watchmedo auto-restart --directory=./ --pattern="*.py" --recursive -- celery -A PROJECT_NAME worker --loglevel=info
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      # Add other environment variables as needed
+    volumes:
+      - ../app:/app
+    networks:
+      - webserver-network
+
+networks:
+  webserver-network:
+    external: true

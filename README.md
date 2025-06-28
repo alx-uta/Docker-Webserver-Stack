@@ -187,14 +187,21 @@ DockerWebserverStack/
 │   ├── app_manage.sh             # Application management
 │   ├── bash/                     # Creation scripts
 │   ├── django_app/               # Django templates
+│   │   ├── vscode.example/       # VSCode configuration template
+│   │   ├── django-dev-compose.yml    # Development compose
+│   │   └── django-frontend-compose.yml # Frontend compose
 │   ├── wordpress_app/            # WordPress templates  
 │   └── php_app/                  # PHP templates
 │
 └── websites/                     # Deployed applications
     └── <domain>/
         ├── app/                  # Django code
+        │   └── .vscode/          # VSCode config (if copied)
         ├── html/                 # WordPress/PHP code
         └── docker/               # App Docker config
+            ├── django-compose.yml         # Production
+            ├── django-dev-compose.yml     # Development
+            └── django-frontend-compose.yml # Frontend
 ```
 
 ---

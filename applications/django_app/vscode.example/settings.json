@@ -1,0 +1,27 @@
+{
+  // Python formatting and linting
+  "python.defaultInterpreterPath": "/usr/local/bin/python",
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.sortImports.args": [
+    "--profile",
+    "black"
+  ],
+  // Auto-format on save
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  // File associations
+  "files.associations": {
+  },
+  // Exclude certain files from search
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/node_modules": true,
+    "**/staticfiles": true
+  }
+}

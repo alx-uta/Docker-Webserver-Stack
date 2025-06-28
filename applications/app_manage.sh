@@ -39,14 +39,29 @@ get_project_name() {
         return
     fi
     
-    # Extract first service name from compose file
-    local first_service=$(awk '/^services:/{flag=1; next} flag && /^[[:space:]]+[a-zA-Z0-9_-]+:/{gsub(/^[[:space:]]+|:.*$/, ""); print; exit}' "$compose_file")
+    # Extract first service name from compose file - this should be the project name
+    local first_service=$(awk '
+        /^services:/ { in_services = 1; next }
+        in_services && /^[[:space:]]*[a-zA-Z0-9_-]+:/ {
+            gsub(/^[[:space:]]*/, "")
+            gsub(/:.*$/, "")
+            print
+            exit
+        }
+        /^[^[:space:]]/ && !/^services:/ { in_services = 0 }
+    ' "$compose_file")
     
     if [ -n "$first_service" ] && [ "$first_service" != "services" ]; then
         echo "$first_service"
     else
-        # Fallback to domain-based name if parsing fails
-        echo "$domain" | sed 's/\./_/g' | sed 's/-/_/g' | tr '[:upper:]' '[:lower:]'
+        # If parsing fails, try to get it from running containers
+        local running_containers=$(docker ps --format "{{.Label \"com.docker.compose.project\"}}" 2>/dev/null | head -1)
+        if [ -n "$running_containers" ]; then
+            echo "$running_containers"
+        else
+            # Final fallback to domain-based name
+            echo "$domain" | sed 's/\./_/g' | sed 's/-/_/g' | tr '[:upper:]' '[:lower:]'
+        fi
     fi
 }
 
@@ -84,11 +99,32 @@ get_compose_files() {
     local domain="$1"
     local app_docker_dir="$WEBSITES_DIR/$domain/docker"
     local files=()
+    
     if [ -d "$app_docker_dir" ]; then
-        while IFS= read -r -d '' file; do
-            files+=("$(basename "$file")")
-        done < <(find "$app_docker_dir" -maxdepth 1 -type f \( -name '*-compose.yml' -o -name 'docker-compose.yml' \) -print0 | sort -z)
+        # Look for all possible compose file patterns
+        for pattern in "*-compose.yml" "*-compose.yaml" "docker-compose.yml" "docker-compose.yaml"; do
+            while IFS= read -r -d '' file; do
+                files+=("$(basename "$file")")
+            done < <(find "$app_docker_dir" -maxdepth 1 -type f -name "$pattern" -print0 2>/dev/null | sort -z)
+        done
+        
+        # Remove duplicates while preserving order
+        local unique_files=()
+        for file in "${files[@]}"; do
+            local found=false
+            for unique_file in "${unique_files[@]}"; do
+                if [ "$file" = "$unique_file" ]; then
+                    found=true
+                    break
+                fi
+            done
+            if [ "$found" = false ]; then
+                unique_files+=("$file")
+            fi
+        done
+        files=("${unique_files[@]}")
     fi
+    
     printf '%s\n' "${files[@]}"
 }
 
@@ -341,11 +377,18 @@ execute_app_action() {
         else
             IFS=',' read -ra idxs <<< "$file_choice"
             for idx in "${idxs[@]}"; do
+                # Remove any whitespace
+                idx=$(echo "$idx" | tr -d ' ')
                 idx=$((idx-1))
                 if [ $idx -ge 0 ] && [ $idx -lt ${#compose_files[@]} ]; then
                     selected_files+=("${compose_files[$idx]}")
                 fi
             done
+        fi
+        
+        if [ ${#selected_files[@]} -eq 0 ]; then
+            print_error "No valid files selected, using first file as default"
+            selected_files=("${compose_files[0]}")
         fi
     else
         selected_files=("${compose_files[@]}")
@@ -667,16 +710,34 @@ handle_creation() {
     
     case $create_choice in
         1)
-            print_info "Starting Django application creation..."
-            ./bash/django_create.sh
+            print_info "Creating Django application"
+            if [ -f "$SCRIPT_DIR/bash/django_create.sh" ]; then
+                cd "$SCRIPT_DIR" && bash bash/django_create.sh
+                print_success "Django application created successfully!"
+                print_info "Application files have been set up. Use the management menu to start the containers when ready."
+            else
+                print_error "Django creation script not found at $SCRIPT_DIR/bash/django_create.sh"
+            fi
             ;;
         2)
-            print_info "Starting WordPress application creation..."
-            ./bash/wordpress_create.sh
+            print_info "Creating WordPress application"
+            if [ -f "$SCRIPT_DIR/bash/wordpress_create.sh" ]; then
+                cd "$SCRIPT_DIR" && bash bash/wordpress_create.sh
+                print_success "WordPress application created successfully!"
+                print_info "Application files have been set up. Use the management menu to start the containers when ready."
+            else
+                print_error "WordPress creation script not found at $SCRIPT_DIR/bash/wordpress_create.sh"
+            fi
             ;;
         3)
-            print_info "Starting PHP application creation..."
-            ./bash/php_create.sh
+            print_info "Creating PHP application"
+            if [ -f "$SCRIPT_DIR/bash/php_create.sh" ]; then
+                cd "$SCRIPT_DIR" && bash bash/php_create.sh
+                print_success "PHP application created successfully!"
+                print_info "Application files have been set up. Use the management menu to start the containers when ready."
+            else
+                print_error "PHP creation script not found at $SCRIPT_DIR/bash/php_create.sh"
+            fi
             ;;
         b|B)
             return
@@ -685,6 +746,9 @@ handle_creation() {
             print_error "Invalid choice!"
             ;;
     esac
+    
+    # Return to the original directory after script execution
+    cd "$SCRIPT_DIR"
 }
 
 # Function to detect and use appropriate compose command
@@ -722,13 +786,31 @@ main() {
             read -p "Select option: " choice
             case $choice in
                 1)
-                    ./bash/django_create.sh
+                    if [ -f "$SCRIPT_DIR/bash/django_create.sh" ]; then
+                        cd "$SCRIPT_DIR" && bash bash/django_create.sh
+                        print_success "Django application created successfully!"
+                        print_info "Application files have been set up. Use the management menu to start the containers when ready."
+                    else
+                        print_error "Django creation script not found"
+                    fi
                     ;;
                 2)
-                    ./bash/wordpress_create.sh
+                    if [ -f "$SCRIPT_DIR/bash/wordpress_create.sh" ]; then
+                        cd "$SCRIPT_DIR" && bash bash/wordpress_create.sh
+                        print_success "WordPress application created successfully!"
+                        print_info "Application files have been set up. Use the management menu to start the containers when ready."
+                    else
+                        print_error "WordPress creation script not found"
+                    fi
                     ;;
                 3)
-                    ./bash/php_create.sh
+                    if [ -f "$SCRIPT_DIR/bash/php_create.sh" ]; then
+                        cd "$SCRIPT_DIR" && bash bash/php_create.sh
+                        print_success "PHP application created successfully!"
+                        print_info "Application files have been set up. Use the management menu to start the containers when ready."
+                    else
+                        print_error "PHP creation script not found"
+                    fi
                     ;;
                 4)
                     continue
