@@ -2,6 +2,17 @@
 
 set -e
 
+# Check Bash version and require 4.0+ for associative arrays
+if [ "${BASH_VERSION%%.*}" -lt 4 ]; then
+    echo "Error: This script requires Bash 4.0 or higher for associative array support."
+    echo "Current version: $BASH_VERSION"
+    echo ""
+    echo "On macOS, install newer Bash with:"
+    echo "  brew install bash"
+    echo "Then run with: bash manage.sh"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
