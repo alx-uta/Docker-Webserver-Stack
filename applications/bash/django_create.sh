@@ -84,25 +84,30 @@ if [ -d "$BASE_DIR/django_app/vscode.example" ]; then
     echo "VSCode configuration copied to $APP_DIR/.vscode"
 fi
 
+# Function for cross-platform sed in-place editing
+portable_sed() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # 8. Replace placeholders in all copied compose files
 for compose_file in "django-compose.yml" "django-dev-compose.yml" "django-frontend-compose.yml"; do
-    sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/$compose_file"
-    sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/$compose_file"
-    # Replace image name with project-specific image
-    sed -i "s/django-PROJECT_NAME:latest/django-$PROJECT:latest/g" "$DOCKER_DIR/$compose_file"
-    # Update volume paths to match new structure
-    sed -i "s|\.\/data\/django\/WEBSITE_DOMAIN\/app|..\/app|g" "$DOCKER_DIR/$compose_file"
-    sed -i "s|\.\/data\/django\/WEBSITE_DOMAIN\/static|..\/app\/static|g" "$DOCKER_DIR/$compose_file"
-    sed -i "s|\.\/data\/django\/WEBSITE_DOMAIN\/media|..\/app\/media|g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s/django-PROJECT_NAME:latest/django-$PROJECT:latest/g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s|\.\/data\/django\/WEBSITE_DOMAIN\/app|..\/app|g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s|\.\/data\/django\/WEBSITE_DOMAIN\/static|..\/app\/static|g" "$DOCKER_DIR/$compose_file"
+    portable_sed "s|\.\/data\/django\/WEBSITE_DOMAIN\/media|..\/app\/media|g" "$DOCKER_DIR/$compose_file"
 done
 
 # 8b. Replace placeholders in .env file
-sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/.env"
-sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/.env"
-sed -i "s|ALLOWED_HOSTS=your.domain.com,localhost|ALLOWED_HOSTS=$DOMAIN|g" "$DOCKER_DIR/.env"
-
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(100))")
-sed -i "s|SECRET_KEY=your-very-secret-key|SECRET_KEY=$SECRET_KEY|g" "$DOCKER_DIR/.env"
+portable_sed "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/.env"
+portable_sed "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/.env"
+portable_sed "s|ALLOWED_HOSTS=your.domain.com,localhost|ALLOWED_HOSTS=$DOMAIN|g" "$DOCKER_DIR/.env"
+portable_sed "s|SECRET_KEY=your-very-secret-key|SECRET_KEY=$SECRET_KEY|g" "$DOCKER_DIR/.env"
 
 echo "Django app setup complete!"
 echo "App directory: $APP_DIR"
@@ -117,6 +122,5 @@ echo "- django-frontend-compose.yml (frontend development)"
 echo ""
 echo "Next steps:"
 echo "1. Edit $DOCKER_DIR/.env with your database credentials and secrets"
-echo "2. Use the application manager to start your Django application:"
-echo "   cd $APPLICATIONS_DIR && ./app_manage.sh"
+echo "2. Use the application manager to start your Django application:"echo "   cd $APPLICATIONS_DIR && ./app_manage.sh"
 deactivate
