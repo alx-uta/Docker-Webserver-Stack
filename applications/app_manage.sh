@@ -155,9 +155,10 @@ execute_compose_cmd() {
     
     local compose_cmd="$COMPOSE_CMD -p $project_name"
 
-    # Add env file if it exists
-    if [ -f ".env" ]; then
-        compose_cmd="$compose_cmd --env-file .env"
+    # Add env file from the same directory as the compose file if it exists
+    local compose_dir="$(dirname "$compose_file")"
+    if [ -f "$compose_dir/.env" ]; then
+        compose_cmd="$compose_cmd --env-file $compose_dir/.env"
     fi
 
     compose_cmd="$compose_cmd -f $compose_file"
