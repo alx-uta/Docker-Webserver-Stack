@@ -29,6 +29,22 @@ WEBSITES_DIR="$(dirname "$(dirname "$BASE_DIR")")/websites"
 SITE_DIR="$WEBSITES_DIR/$DOMAIN"
 APP_DIR="$SITE_DIR/html"
 DOCKER_DIR="$SITE_DIR/docker"
+DOCKER_LOCAL_VOLUME="../html:/var/www/html"
+
+# Ask for volume type
+echo "How do you want to store WordPress files for project '$PROJECT' (domain: $DOMAIN)?"
+echo "1) Mount local directory ($DOCKER_LOCAL_VOLUME:/var/www/html)"
+echo "2) Use Docker named volume (${PROJECT}_wordpress-html:/var/www/html)"
+read -p "Choose 1 or 2 [1]: " VOLUME_CHOICE
+VOLUME_CHOICE=${VOLUME_CHOICE:-1}
+
+if [ "$VOLUME_CHOICE" = "2" ]; then
+    DEFAULT_VOLUME_LOCATION="${PROJECT}_wordpress-html:/var/www/html"
+    VOLUME_MODE="named"
+else
+    DEFAULT_VOLUME_LOCATION="$DOCKER_LOCAL_VOLUME"
+    VOLUME_MODE="local"
+fi
 
 # 3. Create directories
 mkdir -p "$APP_DIR"
@@ -41,15 +57,31 @@ if [ ! -f "$BASE_DIR/wordpress_app/wordpress-compose.yml" ]; then
     exit 1
 fi
 
-# 5. Copy Docker Compose and .env template from wordpress_app
+# 5. Copy Docker Compose, Dockerfile, php.ini and .env template from wordpress_app
 cp "$BASE_DIR/wordpress_app/wordpress-compose.yml" "$DOCKER_DIR/wordpress-compose.yml"
+cp "$BASE_DIR/wordpress_app/Dockerfile" "$DOCKER_DIR/Dockerfile"
+cp "$BASE_DIR/wordpress_app/php.ini" "$DOCKER_DIR/php.ini"
 cp "$BASE_DIR/wordpress_app/.env.example" "$DOCKER_DIR/.env"
 cp "$BASE_DIR/wordpress_app/.gitignore" "$SITE_DIR/.gitignore" 2>/dev/null || true
+
+# 6. Replace placeholders in copied files
 
 # 6. Replace placeholders in copied files
 sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/wordpress-compose.yml"
 sed -i "s/WEBSITE_DOMAIN/$DOMAIN/g" "$DOCKER_DIR/.env"
 sed -i "s/PROJECT_NAME/$PROJECT/g" "$DOCKER_DIR/.env"
+sed -i "s|DEFAULT_VOLUME_LOCATION|$DEFAULT_VOLUME_LOCATION|g" "$DOCKER_DIR/wordpress-compose.yml"
+
+# 7. If using named volume, ensure volumes section is present and uncommented
+if [ "$VOLUME_MODE" = "named" ]; then
+    # Uncomment volumes section if commented, or append if missing
+    if grep -q "^# volumes:" "$DOCKER_DIR/wordpress-compose.yml"; then
+        sed -i "/^# volumes:/s/^# //" "$DOCKER_DIR/wordpress-compose.yml"
+        sed -i "/^#   ${PROJECT}_wordpress-html:/s/^# //" "$DOCKER_DIR/wordpress-compose.yml"
+    elif ! grep -q "volumes:" "$DOCKER_DIR/wordpress-compose.yml"; then
+        echo -e "\nvolumes:\n  ${PROJECT}_wordpress-html:" >> "$DOCKER_DIR/wordpress-compose.yml"
+    fi
+fi
 
 echo "WordPress app setup complete!"
 echo "App directory: $APP_DIR"

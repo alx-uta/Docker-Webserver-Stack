@@ -10,7 +10,7 @@ services:
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
       WORDPRESS_DOMAIN: ${WORDPRESS_DOMAIN}
     volumes:
-      - ../html:/var/www/html
+      DEFAULT_VOLUME_LOCATION
     command: >
       bash -c "chown -R www-data:www-data /var/www/html &&
                docker-entrypoint.sh apache2-foreground"
@@ -20,3 +20,6 @@ services:
 networks:
   webserver-network:
     external: true
+
+# volumes:
+#   PROJECT_NAME_wordpress-html:
