@@ -33,6 +33,11 @@ cd ../applications
 ./bash/php_create.sh       # For PHP
 ```
 
+#### WordPress Project Creation Enhancements
+- When running `wordpress_create.sh`, you will be prompted to choose between mounting a local directory or using a Docker named volume for your WordPress files. The generated `wordpress-compose.yml` will reflect your choice.
+- A new Dockerfile is created for each WordPress project, based on the template in `applications/wordpress_app/Dockerfile`.
+- **SSH Key Support:** If you want your WordPress container to have SSH keys for git operations, manually create a `ssh/` directory next to your Dockerfile and add your local `id_rsa` and `id_rsa.pub` files. These will be copied into the container at build time (for local development only).
+
 ### 4. **Manage Applications**
 ```bash
 ./app_manage.sh
@@ -125,6 +130,8 @@ SEAWEED_POSTGRES_DB=seaweedfs
 - MySQL database integration
 - File uploads and theme management
 - Plugin-ready configuration
+- Interactive volume selection (local mount or Docker named volume) during project creation
+- Custom Dockerfile per project, supporting additional tools and SSH key injection for development
 
 ### **PHP Applications**
 - Modern PHP 8.1+ with Apache

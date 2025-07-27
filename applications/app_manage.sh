@@ -153,15 +153,16 @@ execute_compose_cmd() {
     
     cd "$app_dir/docker"
     
-    local compose_cmd="docker-compose -p $project_name"
-    
-    # Add env file if it exists
-    if [ -f ".env" ]; then
-        compose_cmd="$compose_cmd --env-file .env"
+    local compose_cmd="$COMPOSE_CMD -p $project_name"
+
+    # Add env file from the same directory as the compose file if it exists
+    local compose_dir="$(dirname "$compose_file")"
+    if [ -f "$compose_dir/.env" ]; then
+        compose_cmd="$compose_cmd --env-file $compose_dir/.env"
     fi
-    
+
     compose_cmd="$compose_cmd -f $compose_file"
-    
+
     case $action in
         "up")
             print_info "Starting $domain (project: $project_name)..."
@@ -777,7 +778,6 @@ main() {
         print_info "Please install Docker Compose plugin or standalone docker-compose"
         exit 1
     fi
-    
     print_info "Using compose command: $COMPOSE_CMD"
     
     while true; do
