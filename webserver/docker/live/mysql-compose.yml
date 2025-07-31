@@ -10,8 +10,13 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./data/mysql:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     networks:
       - webserver-network
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
 
 networks:
   webserver-network:
