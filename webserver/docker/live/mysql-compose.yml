@@ -16,7 +16,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 1536M
 
 networks:
   webserver-network:
