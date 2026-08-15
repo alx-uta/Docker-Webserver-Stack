@@ -3,8 +3,7 @@ services:
     image: chrislusf/seaweedfs:latest
     restart: unless-stopped
     container_name: seaweedfs-master
-    command: "master -ip=seaweedfs-master -mdir=/data"
-    # No external ports - only internal communication
+    command: "master -ip=seaweedfs-master -mdir=/data -volumeSizeLimitMB=1024"
     volumes:
       - ./data/seaweedfs/master:/data
     networks:
@@ -14,22 +13,20 @@ services:
     image: chrislusf/seaweedfs:latest
     restart: unless-stopped
     container_name: seaweedfs-volume
-    command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -dir=/data"
-    # No external ports - only internal communication
+    command: "volume -master=seaweedfs-master:9333 -ip=seaweedfs-volume -dir=/data -max=0"
     depends_on:
       - seaweedfs-master
     volumes:
       - ./data/seaweedfs/volume:/data
     networks:
       - webserver-network
+
   seaweedfs-filer:
     image: chrislusf/seaweedfs:latest
     restart: unless-stopped
     container_name: seaweedfs-filer
     command:
       - "apk add --no-cache postgresql-client && sh /scripts/check_create_filemeta.sh && weed filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -port=8888 -defaultReplicaPlacement=000 -disableDirListing=true -exposeDirectoryData=false"
-
-    # No external ports - only internal communication
     depends_on:
       - seaweedfs-master
     environment:
@@ -42,8 +39,9 @@ services:
       - webserver-network
     volumes:
       - ./data/seaweedfs/filer:/data
-      - ../../../config/seaweedfs/check_create_filemeta.sh:/scripts/check_create_filemeta.sh
+      - ../../config/seaweedfs/check_create_filemeta.sh:/scripts/check_create_filemeta.sh
     entrypoint: ["/bin/sh", "-c"]
+
   seaweedfs-s3:
     image: chrislusf/seaweedfs:latest
     restart: unless-stopped
