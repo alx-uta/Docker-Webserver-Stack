@@ -3,7 +3,7 @@ services:
     image: chrislusf/seaweedfs:latest
     restart: unless-stopped
     container_name: seaweedfs-master
-    command: "master -ip=seaweedfs-master -mdir=/data -volumePreallocate=false -volumeSizeLimitMB=1024"
+    command: "master -ip=seaweedfs-master -mdir=/data -volumePreallocate=false -volumeSizeLimitMB=1024 -volumeGrowthCount=1"
     volumes:
       - ./data/seaweedfs/master:/data
     networks:
