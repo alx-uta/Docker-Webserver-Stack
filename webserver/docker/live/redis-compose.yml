@@ -1,7 +1,7 @@
 services:
   redis:
     container_name: redis
-    image: redis:8.0.1
+    image: redis:8.2.0
     restart: unless-stopped
     command: [
       "redis-server",

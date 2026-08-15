@@ -604,9 +604,9 @@ execute_compose() {
                     local file="${DEV_SERVICES[$service]}"
                     print_info "Starting $service..."
                     if [ -n "$custom_project_name" ]; then
-                        $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -p "${custom_project_name}-${service}" -f "$file" up -d
+                        $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -p "${custom_project_name}" -f "$file" up -d
                         # Save project name for individual service management
-                        PROJECT_NAMES["${service}_$(basename "$file" .yml)"]="${custom_project_name}-${service}"
+                        PROJECT_NAMES["${service}_$(basename "$file" .yml)"]="${custom_project_name}"
                     else
                         $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -f "$file" up -d
                     fi
@@ -616,9 +616,9 @@ execute_compose() {
                     local file="${LIVE_SERVICES[$service]}"
                     print_info "Starting $service..."
                     if [ -n "$custom_project_name" ]; then
-                        $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -p "${custom_project_name}-${service}" -f "$file" up -d
+                        $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -p "${custom_project_name}" -f "$file" up -d
                         # Save project name for individual service management
-                        PROJECT_NAMES["${service}_$(basename "$file" .yml)"]="${custom_project_name}-${service}"
+                        PROJECT_NAMES["${service}_$(basename "$file" .yml)"]="${custom_project_name}"
                     else
                         $COMPOSE_CMD --env-file "$PROJECT_ROOT/.env" -f "$file" up -d
                     fi

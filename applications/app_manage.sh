@@ -151,14 +151,27 @@ execute_compose_cmd() {
     local project_name=$(get_project_name "$domain")
     local app_dir="$WEBSITES_DIR/$domain"
     
-    cd "$app_dir/docker"
+    cd "$app_dir/docker" || {
+        print_error "Failed to change to directory: $app_dir/docker"
+        return 1
+    }
+    
+    print_info "Working directory: $(pwd)"
+    print_info "Compose file: $compose_file"
+    
+    # Verify compose file exists
+    if [ ! -f "$compose_file" ]; then
+        print_error "Compose file not found: $compose_file"
+        print_error "Available files in $(pwd):"
+        ls -la
+        return 1
+    fi
     
     local compose_cmd="$COMPOSE_CMD -p $project_name"
 
-    # Add env file from the same directory as the compose file if it exists
-    local compose_dir="$(dirname "$compose_file")"
-    if [ -f "$compose_dir/.env" ]; then
-        compose_cmd="$compose_cmd --env-file $compose_dir/.env"
+    # Add env file if it exists in current directory
+    if [ -f ".env" ]; then
+        compose_cmd="$compose_cmd --env-file .env"
     fi
 
     compose_cmd="$compose_cmd -f $compose_file"
@@ -212,9 +225,10 @@ show_app_menu() {
         echo
         echo "Available actions:"
         echo "1) Create new Django application"
-        echo "2) Create new WordPress application"
-        echo "3) Create new PHP application"
-        echo "4) Refresh application list"
+        echo "2) Create new Wagtail application"
+        echo "3) Create new WordPress application"
+        echo "4) Create new PHP application"
+        echo "5) Refresh application list"
         echo "q) Quit"
         return 1
     fi
@@ -226,12 +240,16 @@ show_app_menu() {
         local project_name=$(get_project_name "$app")
         
         # Detect application type
-        if [ -f "$WEBSITES_DIR/$app/app/manage.py" ]; then
+        if [ -f "$WEBSITES_DIR/$app/docker/wagtail-compose.yml" ]; then
+            app_type="Wagtail"
+        elif [ -f "$WEBSITES_DIR/$app/docker/django-compose.yml" ]; then
             app_type="Django"
         elif [ -f "$WEBSITES_DIR/$app/docker/wordpress-compose.yml" ]; then
             app_type="WordPress"
         elif [ -f "$WEBSITES_DIR/$app/docker/php-compose.yml" ]; then
             app_type="PHP"
+        elif [ -f "$WEBSITES_DIR/$app/app/manage.py" ]; then
+            app_type="Django"
         elif [ -d "$WEBSITES_DIR/$app/html" ]; then
             # Generic HTML/PHP if html directory exists but no specific compose file
             if [ -f "$WEBSITES_DIR/$app/html/index.php" ] || [ -f "$WEBSITES_DIR/$app/html/index.html" ]; then
@@ -296,12 +314,16 @@ show_app_actions() {
     
     # Show application info
     local app_type="Unknown"
-    if [ -f "$app_dir/app/manage.py" ]; then
+    if [ -f "$app_dir/docker/wagtail-compose.yml" ]; then
+        app_type="Wagtail"
+    elif [ -f "$app_dir/docker/django-compose.yml" ]; then
         app_type="Django"
     elif [ -f "$app_dir/docker/wordpress-compose.yml" ]; then
         app_type="WordPress"
     elif [ -f "$app_dir/docker/php-compose.yml" ]; then
         app_type="PHP"
+    elif [ -f "$app_dir/app/manage.py" ]; then
+        app_type="Django"
     elif [ -d "$app_dir/html" ]; then
         # Generic HTML/PHP if html directory exists but no specific compose file
         if [ -f "$app_dir/html/index.php" ] || [ -f "$app_dir/html/index.html" ]; then
@@ -345,6 +367,8 @@ show_app_actions() {
     echo "10) Remove application (delete volumes)"
     if [ "$app_type" = "Django" ]; then
         echo "11) Django management commands"
+    elif [ "$app_type" = "Wagtail" ]; then
+        echo "11) Wagtail management commands"
     elif [ "$app_type" = "PHP" ] || [ "$app_type" = "PHP/HTML" ]; then
         echo "11) PHP management commands"
     fi
@@ -506,6 +530,9 @@ execute_app_action() {
         "django")
             django_management "$domain"
             ;;
+        "wagtail")
+            wagtail_management "$domain"
+            ;;
         "php")
             php_management "$domain"
             ;;
@@ -611,6 +638,100 @@ django_management() {
     esac
 }
 
+# Function for Wagtail management commands
+wagtail_management() {
+    local domain="$1"
+    local project_name=$(get_project_name "$domain")
+    
+    # Find Wagtail container
+    local containers=$(get_running_containers "$project_name")
+    local wagtail_container=""
+    
+    for container in $containers; do
+        if [[ "$container" =~ wagtail|django|web|app ]] && ! [[ "$container" =~ celery ]]; then
+            wagtail_container="$container"
+            break
+        fi
+    done
+    
+    if [ -z "$wagtail_container" ]; then
+        print_error "No running Wagtail container found for $domain"
+        print_info "Available containers: $containers"
+        return 1
+    fi
+    
+    echo
+    print_info "Wagtail Management for $domain"
+    echo "Container: $wagtail_container"
+    echo "Project: $project_name"
+    echo
+    echo "Common commands:"
+    echo "1) Run migrations (migrate)"
+    echo "2) Create migrations (makemigrations)"
+    echo "3) Create superuser"
+    echo "4) Collect static files"
+    echo "5) Django shell"
+    echo "6) Show migrations status"
+    echo "7) Update search index"
+    echo "8) Publish scheduled pages"
+    echo "9) Rebuild search index"
+    echo "10) Import images from path"
+    echo "11) Custom command"
+    echo "b) Back"
+    echo
+    
+    read -p "Select option: " wagtail_choice
+    
+    case $wagtail_choice in
+        1)
+            docker exec -it "$wagtail_container" python manage.py migrate
+            ;;
+        2)
+            docker exec -it "$wagtail_container" python manage.py makemigrations
+            ;;
+        3)
+            docker exec -it "$wagtail_container" python manage.py createsuperuser
+            ;;
+        4)
+            docker exec -it "$wagtail_container" python manage.py collectstatic --noinput
+            ;;
+        5)
+            docker exec -it "$wagtail_container" python manage.py shell
+            ;;
+        6)
+            docker exec -it "$wagtail_container" python manage.py showmigrations
+            ;;
+        7)
+            docker exec -it "$wagtail_container" python manage.py update_index
+            ;;
+        8)
+            docker exec -it "$wagtail_container" python manage.py publish_scheduled_pages
+            ;;
+        9)
+            print_warning "This will rebuild the entire search index. This may take a while."
+            read -p "Continue? (y/N): " confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                docker exec -it "$wagtail_container" python manage.py update_index --backend default --schema-only
+                docker exec -it "$wagtail_container" python manage.py update_index
+            fi
+            ;;
+        10)
+            read -p "Enter path to images directory inside container: " images_path
+            docker exec -it "$wagtail_container" python manage.py import_images "$images_path"
+            ;;
+        11)
+            read -p "Enter Wagtail/Django command (without 'python manage.py'): " custom_cmd
+            docker exec -it "$wagtail_container" python manage.py $custom_cmd
+            ;;
+        b|B)
+            return
+            ;;
+        *)
+            print_error "Invalid choice!"
+            ;;
+    esac
+}
+
 # Function for PHP management commands
 php_management() {
     local domain="$1"
@@ -702,8 +823,9 @@ handle_creation() {
     echo "==================="
     echo
     echo "1) Create Django application"
-    echo "2) Create WordPress application"
-    echo "3) Create PHP application"
+    echo "2) Create Wagtail application"
+    echo "3) Create WordPress application"
+    echo "4) Create PHP application"
     echo "b) Back to main menu"
     echo
     
@@ -721,6 +843,16 @@ handle_creation() {
             fi
             ;;
         2)
+            print_info "Creating Wagtail application"
+            if [ -f "$SCRIPT_DIR/bash/wagtail_create.sh" ]; then
+                cd "$SCRIPT_DIR" && bash bash/wagtail_create.sh
+                print_success "Wagtail application created successfully!"
+                print_info "Application files have been set up. Use the management menu to start the containers when ready."
+            else
+                print_error "Wagtail creation script not found at $SCRIPT_DIR/bash/wagtail_create.sh"
+            fi
+            ;;
+        3)
             print_info "Creating WordPress application"
             if [ -f "$SCRIPT_DIR/bash/wordpress_create.sh" ]; then
                 cd "$SCRIPT_DIR" && bash bash/wordpress_create.sh
@@ -730,7 +862,7 @@ handle_creation() {
                 print_error "WordPress creation script not found at $SCRIPT_DIR/bash/wordpress_create.sh"
             fi
             ;;
-        3)
+        4)
             print_info "Creating PHP application"
             if [ -f "$SCRIPT_DIR/bash/php_create.sh" ]; then
                 cd "$SCRIPT_DIR" && bash bash/php_create.sh
@@ -795,6 +927,15 @@ main() {
                     fi
                     ;;
                 2)
+                    if [ -f "$SCRIPT_DIR/bash/wagtail_create.sh" ]; then
+                        cd "$SCRIPT_DIR" && bash bash/wagtail_create.sh
+                        print_success "Wagtail application created successfully!"
+                        print_info "Application files have been set up. Use the management menu to start the containers when ready."
+                    else
+                        print_error "Wagtail creation script not found"
+                    fi
+                    ;;
+                3)
                     if [ -f "$SCRIPT_DIR/bash/wordpress_create.sh" ]; then
                         cd "$SCRIPT_DIR" && bash bash/wordpress_create.sh
                         print_success "WordPress application created successfully!"
@@ -803,7 +944,7 @@ main() {
                         print_error "WordPress creation script not found"
                     fi
                     ;;
-                3)
+                4)
                     if [ -f "$SCRIPT_DIR/bash/php_create.sh" ]; then
                         cd "$SCRIPT_DIR" && bash bash/php_create.sh
                         print_success "PHP application created successfully!"
@@ -812,7 +953,7 @@ main() {
                         print_error "PHP creation script not found"
                     fi
                     ;;
-                4)
+                5)
                     continue
                     ;;
                 q|Q)
@@ -884,7 +1025,11 @@ main() {
                                     ;;
                                 11)
                                     # Check app type for management commands
-                                    if [ -f "$WEBSITES_DIR/$selected_app/app/manage.py" ]; then
+                                    if [ -f "$WEBSITES_DIR/$selected_app/docker/wagtail-compose.yml" ]; then
+                                        execute_app_action "$selected_app" "wagtail"
+                                    elif [ -f "$WEBSITES_DIR/$selected_app/docker/django-compose.yml" ]; then
+                                        execute_app_action "$selected_app" "django"
+                                    elif [ -f "$WEBSITES_DIR/$selected_app/app/manage.py" ]; then
                                         execute_app_action "$selected_app" "django"
                                     elif [ -f "$WEBSITES_DIR/$selected_app/docker/php-compose.yml" ] || [ -f "$WEBSITES_DIR/$selected_app/html/index.php" ]; then
                                         execute_app_action "$selected_app" "php"
